@@ -2380,13 +2380,13 @@
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Team name label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xS5-x1-GJN">
-                                                    <rect key="frame" x="36" y="19" width="128.33333333333334" height="20.333333333333329"/>
-                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <rect key="frame" x="36" y="19" width="144" height="21.666666666666671"/>
+                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="18"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="LZu-PU-Km9">
-                                                    <rect key="frame" x="16" y="47.333333333333343" width="327.66666666666669" height="34"/>
+                                                    <rect key="frame" x="36" y="48.666666666666657" width="327.66666666666669" height="34"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Judge 1 Score:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="daK-qL-q4a">
                                                             <rect key="frame" x="0.0" y="6.9999999999999982" width="112.66666666666667" height="20.333333333333329"/>
@@ -2413,7 +2413,7 @@
                                                     </subviews>
                                                 </stackView>
                                                 <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="tiR-KD-sDS">
-                                                    <rect key="frame" x="16" y="89.333333333333329" width="331" height="34"/>
+                                                    <rect key="frame" x="36" y="90.666666666666671" width="331" height="34"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Judge 3 Score:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="UEc-H0-8t6">
                                                             <rect key="frame" x="0.0" y="6.9999999999999982" width="115.33333333333333" height="20.333333333333329"/>
@@ -2444,9 +2444,9 @@
                                                 <constraint firstItem="tiR-KD-sDS" firstAttribute="top" secondItem="LZu-PU-Km9" secondAttribute="bottom" constant="8" id="17c-4q-EBn"/>
                                                 <constraint firstItem="xS5-x1-GJN" firstAttribute="top" secondItem="XFc-Wz-KX1" secondAttribute="topMargin" constant="8" id="Fxc-3q-Ne0"/>
                                                 <constraint firstItem="LZu-PU-Km9" firstAttribute="top" secondItem="xS5-x1-GJN" secondAttribute="bottom" constant="8" id="Ln6-OA-hiJ"/>
-                                                <constraint firstItem="tiR-KD-sDS" firstAttribute="leading" secondItem="XFc-Wz-KX1" secondAttribute="leading" constant="16" id="coN-SH-Pf4"/>
+                                                <constraint firstItem="tiR-KD-sDS" firstAttribute="leading" secondItem="XFc-Wz-KX1" secondAttribute="leadingMargin" constant="16" id="coN-SH-Pf4"/>
                                                 <constraint firstItem="xS5-x1-GJN" firstAttribute="leading" secondItem="XFc-Wz-KX1" secondAttribute="leadingMargin" constant="16" id="cq3-Ni-ZkN"/>
-                                                <constraint firstItem="LZu-PU-Km9" firstAttribute="leading" secondItem="XFc-Wz-KX1" secondAttribute="leading" constant="16" id="wO6-Dx-vAW"/>
+                                                <constraint firstItem="LZu-PU-Km9" firstAttribute="leading" secondItem="XFc-Wz-KX1" secondAttribute="leadingMargin" constant="16" id="wO6-Dx-vAW"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                         <connections>
@@ -2499,7 +2499,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="M12-r9-Rmx">
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="M12-r9-Rmx">
                                 <rect key="frame" x="0.0" y="62" width="440" height="860"/>
                                 <subviews>
                                     <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="8rZ-vU-BOU">

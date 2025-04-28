@@ -22,14 +22,57 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
         
         tableView.delegate = self
         tableView.dataSource = self
-    }
+        
+        fetchExistingScores()
+         
+         // Add tap to dismiss keyboard
+         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+         tapGesture.cancelsTouchesInView = false
+         view.addGestureRecognizer(tapGesture)
+     }
+     
+     @objc func dismissKeyboard() {
+         view.endEditing(true)
+     }
+     
+     func fetchExistingScores() {
+         let db = Firestore.firestore()
+         
+         db.collection("comps").document(competitionID).collection("scores").getDocuments { snapshot, error in
+             if let error = error {
+                 print("Error fetching existing scores: \(error)")
+                 return
+             }
+             
+             guard let documents = snapshot?.documents else { return }
+             
+             for doc in documents {
+                 let data = doc.data()
+                 let teamID = doc.documentID
+                 let judge1 = data["judge1Score"] as? Int ?? 0
+                 let judge2 = data["judge2Score"] as? Int ?? 0
+                 let judge3 = data["judge3Score"] as? Int ?? 0
+                 let judge4 = data["judge4Score"] as? Int ?? 0
+                 
+                 self.scores[teamID] = [judge1, judge2, judge3, judge4]
+             }
+             
+             DispatchQueue.main.async {
+                 self.tableView.reloadData()
+             }
+         }
+     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return teams.count
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 120 // or 130 if you want even more breathing room
+        return 130
+    }
+    
+    func tableView(_ tableView: UITableView, shouldHighlightRowAt indexPath: IndexPath) -> Bool {
+        return false // Disable row selection highlighting
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -37,7 +80,10 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ScoreEntryCell", for: indexPath) as? ScoreEntryCell else {
             return UITableViewCell()
         }
-        cell.configure(with: team, judgeNames: judgeNames)
+        
+        let existingScores = scores[team.id] ?? [] // Get any already-entered scores
+        
+        cell.configure(with: team, judgeNames: judgeNames, existingScores: existingScores)
         cell.delegate = self
         return cell
     }

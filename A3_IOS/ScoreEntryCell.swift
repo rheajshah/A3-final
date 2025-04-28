@@ -28,21 +28,29 @@ class ScoreEntryCell: UITableViewCell {
     weak var delegate: ScoreEntryCellDelegate?
     private var teamID: String?
     
-    func configure(with team: LineupTeam, judgeNames: [String]) {
+    func configure(with team: LineupTeam, judgeNames: [String], existingScores: [Int]) {
         teamNameLabel.text = team.name
         teamID = team.id
         
-        // set judge names if available
         if judgeNames.count >= 4 {
             judge1Label.text = "\(judgeNames[0])'s score:"
             judge2Label.text = "\(judgeNames[1])'s score:"
             judge3Label.text = "\(judgeNames[2])'s score:"
             judge4Label.text = "\(judgeNames[3])'s score:"
         }
-            
-        [judge1Field, judge2Field, judge3Field, judge4Field].forEach { field in
+        
+        let fields = [judge1Field, judge2Field, judge3Field, judge4Field]
+        
+        for (index, field) in fields.enumerated() {
             field?.keyboardType = .decimalPad
             field?.addTarget(self, action: #selector(scoreChanged(_:)), for: .editingChanged)
+            
+            // Pre-populate if existing score available
+            if existingScores.indices.contains(index) {
+                field?.text = "\(existingScores[index])"
+            } else {
+                field?.text = "" // otherwise blank
+            }
         }
     }
     
