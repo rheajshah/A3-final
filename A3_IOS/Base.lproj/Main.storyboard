@@ -2090,6 +2090,7 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="lineupTitleLabel" destination="zaC-XC-iEW" id="iaR-bo-CTa"/>
                         <outlet property="selectCompetingTeamsButton" destination="TET-to-tMM" id="KmP-fd-X76"/>
                         <outlet property="tableView" destination="356-Dc-aeh" id="i0P-KJ-9xb"/>
                     </connections>

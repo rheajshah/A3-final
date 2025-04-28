@@ -12,10 +12,13 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var selectCompetingTeamsButton: UIButton!
+    @IBOutlet weak var lineupTitleLabel: UILabel!
     
     var isAdmin: Bool!
     var competitionID: String!
     var attendingTeams: [LineupTeam] = []
+    var placingsExist: Bool = false
+    var placings: [String] = []
     let db = Firestore.firestore()
 
     override func viewDidLoad() {
@@ -27,17 +30,16 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
         // Show button only if user is admin
         selectCompetingTeamsButton.isHidden = !(isAdmin ?? false)
         
-        // Fetch the list of teams attending the competition
-        fetchAttendingTeams()
+        // Fetch the list of teams attending the competition or placings
+        fetchCompetitionInfo()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        fetchAttendingTeams()  // Fetch teams again when the view appears (after adding a new team)
+        fetchCompetitionInfo()  // Fetch teams again when the view appears (after adding a new team)
     }
 
-    // Fetch the teams attending the competition based on the competitionID
-    func fetchAttendingTeams() {
+    func fetchCompetitionInfo() {
         let compRef = db.collection("comps").document(competitionID)
         
         compRef.getDocument { snapshot, error in
@@ -46,37 +48,91 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
                 return
             }
 
-            if let data = snapshot?.data(), let teamIDs = data["competingTeams"] as? [String] {
-                // Now fetch the details of each team using their teamIDs
-                self.fetchTeamDetails(teamIDs: teamIDs)
+            guard let data = snapshot?.data() else { return }
+
+            let competingTeamIDs = data["competingTeams"] as? [String] ?? []
+            let placingsTeamIDs = data["placings"] as? [String] ?? []
+
+            if !competingTeamIDs.isEmpty {
+                if !placingsTeamIDs.isEmpty && competingTeamIDs.count == placingsTeamIDs.count {
+                    // Placings exist and complete
+                    self.placingsExist = true
+                    self.fetchTeamDetailsInOrder(teamIDs: placingsTeamIDs)
+                } else {
+                    // No full placings yet
+                    self.placingsExist = false
+                    self.fetchTeamDetails(teamIDs: competingTeamIDs)
+                }
+
+                DispatchQueue.main.async {
+                    self.lineupTitleLabel.text = self.placingsExist ? "Placings" : "Lineup"
+                }
             }
         }
     }
 
-    // Fetch details of the teams using their IDs
+    
+//    // Fetch the teams attending the competition based on the competitionID
+//    func fetchAttendingTeams() {
+//        let compRef = db.collection("comps").document(competitionID)
+//        
+//        compRef.getDocument { snapshot, error in
+//            if let error = error {
+//                print("Error fetching competition data: \(error)")
+//                return
+//            }
+//
+//            if let data = snapshot?.data(), let teamIDs = data["competingTeams"] as? [String] {
+//                // Now fetch the details of each team using their teamIDs
+//                self.fetchTeamDetails(teamIDs: teamIDs)
+//            }
+//        }
+//    }
+
+    // Normal fetch
     func fetchTeamDetails(teamIDs: [String]) {
-        guard !teamIDs.isEmpty else {
-            print("Empty teamIDs array. Skipping Firestore query.")
-            return
-        }
-        
         db.collection("teams").whereField(FieldPath.documentID(), in: teamIDs).getDocuments { snapshot, error in
             if let error = error {
                 print("Error fetching team details: \(error)")
                 return
             }
 
-            // Map the teams data to our LineupTeam model and append them to attendingTeams
             self.attendingTeams = snapshot?.documents.compactMap { doc in
                 let data = doc.data()
                 let teamName = data["name"] as? String ?? "Unknown"
                 let logoURL = data["teamLogoURL"] as? String ?? ""
-                let eloScore = data["elo"] as? Int ?? 0
-                
+                let eloScore = data["eloScore"] as? Int ?? 0
                 return LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: eloScore)
             } ?? []
 
-            // Reload table view with the fetched data
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+    }
+
+    // Fetch with specific order (for placings)
+    func fetchTeamDetailsInOrder(teamIDs: [String]) {
+        db.collection("teams").whereField(FieldPath.documentID(), in: teamIDs).getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching team details: \(error)")
+                return
+            }
+
+            guard let docs = snapshot?.documents else { return }
+            var teamsDict: [String: LineupTeam] = [:]
+
+            for doc in docs {
+                let data = doc.data()
+                let teamName = data["name"] as? String ?? "Unknown"
+                let logoURL = data["teamLogoURL"] as? String ?? ""
+                let eloScore = data["eloScore"] as? Int ?? 0
+                let team = LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: eloScore)
+                teamsDict[doc.documentID] = team
+            }
+
+            self.attendingTeams = teamIDs.compactMap { teamsDict[$0] }
+
             DispatchQueue.main.async {
                 self.tableView.reloadData()
             }
@@ -99,11 +155,14 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
         }
 
         let team = attendingTeams[indexPath.row]
+        let position = indexPath.row + 1 // 1-based ranking
         
-        // Set the team name and Elo score
+        // Set the team name and ELO score
         cell.teamName.text = team.name
         cell.eloLabel.text = "ELO: \(team.elo)"
-        
+
+        cell.configure(with: team, position: position, isPlacingsMode: placingsExist)
+       
         // Load the team logo image
         if let url = URL(string: team.logoURL) {
             cell.loadImage(from: url, into: cell.teamLogoImageView)

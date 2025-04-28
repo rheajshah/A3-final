@@ -22,6 +22,15 @@ class LineupTeamCell: UITableViewCell {
         teamLogoImageView.clipsToBounds = true
     }
     
+    func configure(with team: LineupTeam, position: Int?, isPlacingsMode: Bool) {
+        if isPlacingsMode {
+            numberLabel.isHidden = false
+            numberLabel.text = "\(position ?? 0)" // 1, 2, 3, etc.
+        } else {
+            numberLabel.isHidden = true
+        }
+    }
+
     func loadImage(from url: URL, into imageView: UIImageView?) {
         URLSession.shared.dataTask(with: url) { data, _, _ in
             if let data = data {
