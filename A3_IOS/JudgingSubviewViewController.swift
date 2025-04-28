@@ -19,6 +19,7 @@ class JudgingSubviewViewController: UIViewController {
     @IBOutlet weak var scoringButton: UIButton!
     
     @IBOutlet weak var editButton: UIButton!
+    @IBOutlet weak var inputScoresButton: UIButton!
     
     var isAdmin: Bool!
     var competitionID: String!
@@ -93,5 +94,61 @@ class JudgingSubviewViewController: UIViewController {
         vc.competitionID = self.competitionID
         vc.modalPresentationStyle = .formSheet
         present(vc, animated: true)
+    }
+    
+    
+    @IBAction func onInputScoresButtonPressed(_ sender: Any) {
+        let db = Firestore.firestore()
+        
+        db.collection("comps").document(competitionID).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching comp details: \(error)")
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                print("No comp data found.")
+                return
+            }
+            
+            let judgeNames = data["judges"] as? [String] ?? []
+            let teamIDs = data["competingTeams"] as? [String] ?? []
+            
+            if teamIDs.isEmpty {
+                print("No competing teams found.")
+                return
+            }
+            
+            db.collection("teams").whereField(FieldPath.documentID(), in: teamIDs).getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error fetching team details: \(error)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("No team documents found.")
+                    return
+                }
+                
+                let teams = documents.compactMap { doc -> LineupTeam? in
+                    let data = doc.data()
+                    let name = data["name"] as? String ?? "Unknown"
+                    let logoURL = data["teamLogoURL"] as? String ?? ""
+                    let elo = data["elo"] as? Int ?? 0
+                    return LineupTeam(id: doc.documentID, name: name, logoURL: logoURL, elo: elo)
+                }
+                
+                DispatchQueue.main.async {
+                    let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                    if let vc = storyboard.instantiateViewController(withIdentifier: "ScoresEntryViewController") as? ScoresEntryViewController {
+                        vc.competitionID = self.competitionID
+                        vc.teams = teams
+                        vc.judgeNames = judgeNames
+                        vc.modalPresentationStyle = .formSheet // (optional) style
+                        self.present(vc, animated: true)
+                    }
+                }
+            }
+        }
     }
 }
