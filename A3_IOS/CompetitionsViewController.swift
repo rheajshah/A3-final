@@ -1,4 +1,4 @@
-//  CompetitionsViewController.swift
+    //  CompetitionsViewController.swift
 //  A3_IOS
 //
 //  Created by Akhilesh Bitla on 3/12/25.

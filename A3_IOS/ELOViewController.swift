@@ -176,13 +176,13 @@ class ELOViewController: UIViewController, UITableViewDataSource, UITableViewDel
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedTeam = data[indexPath.section]
+        let selectedTeam = data[indexPath.row]
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         if let teamInfoVC = storyboard.instantiateViewController(withIdentifier: "teamInfoViewController") as? TeamInfoViewController {
             teamInfoVC.teamId = selectedTeam.id
             self.navigationController?.pushViewController(teamInfoVC, animated: true)
         }
-        
     }
+
 }

@@ -92,6 +92,10 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
         let db = Firestore.firestore()
         var avgScores: [(teamID: String, avg: Double)] = []
         
+        // Dictionary to store updated ELO scores for teams
+        var updatedELOScores: [String: Double] = [:]
+        
+        // Loop through scores and calculate the average for each team
         for (teamID, judgeScores) in scores {
             guard judgeScores.count == 4 else {
                 print("Skipping \(teamID) — not all judge scores entered.")
@@ -101,6 +105,7 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
             let avg = Double(judgeScores.reduce(0, +)) / Double(judgeScores.count)
             avgScores.append((teamID, avg))
             
+            // Save the updated scores to Firestore
             db.collection("comps").document(competitionID).collection("scores").document(teamID).setData([
                 "judge1Score": judgeScores[0],
                 "judge2Score": judgeScores[1],
@@ -114,9 +119,12 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
                     print("Saved scores for \(teamID)")
                 }
             }
+            
+            // Store the updated average score for ELO calculation later
+            updatedELOScores[teamID] = avg
         }
         
-        // Now save placings
+        // Now save placings based on updated average scores
         let sorted = avgScores.sorted { $0.avg > $1.avg }
         let placingIDs = sorted.map { $0.teamID }
         
@@ -127,6 +135,106 @@ class ScoresEntryViewController: UIViewController, UITableViewDelegate, UITableV
                 print("Error updating placings: \(error)")
             } else {
                 print("Placings updated successfully.")
+            }
+        }
+        
+        // Check if this competition is being edited or is the first time it's being added
+        db.collection("comps").document(competitionID).getDocument { (document, error) in
+            if let error = error {
+                print("Error fetching competition data for edit check: \(error)")
+                return
+            }
+            
+            if let document = document, document.exists {
+                let placingsArray = document.data()?["placings"] as? [String] ?? []
+                
+                // If placings are populated, this competition has already been evaluated
+                let isEditing = placingsArray.contains { teamID in
+                    // Check if the current team is already placed in this competition
+                    return updatedELOScores.keys.contains(teamID)
+                }
+                
+                // Recalculate ELO if it's an edit (i.e., placings are populated)
+                if isEditing {
+                    // Recalculate ELO for the affected team based on all comps scores
+                    for (teamID, newAvg) in updatedELOScores {
+                        // Fetch all competitions this team has participated in
+                        db.collection("teams").document(teamID).getDocument { (teamDoc, error) in
+                            if let error = error {
+                                print("Error fetching team data for ELO update: \(error)")
+                                return
+                            }
+                            
+                            if let teamDoc = teamDoc, teamDoc.exists {
+                                let compsArray = teamDoc.data()?["comps"] as? [String] ?? []
+                                
+                                // Initialize a variable to calculate the total score
+                                var totalScore: Double = 0
+                                var totalCompetitions = compsArray.count
+                                print("TeamID: \(teamID) | Total Comps: \(totalCompetitions)")
+
+                                // Loop through all comps to calculate the total score for this team
+                                for compID in compsArray {
+                                    db.collection("comps").document(compID).collection("scores").document(teamID).getDocument { (compDoc, error) in
+                                        if let error = error {
+                                            print("Error fetching comp data for recalculation: \(error)")
+                                            return
+                                        }
+                                        
+                                        if let compDoc = compDoc, compDoc.exists {
+                                            let avgScore = compDoc.data()?["averageScore"] as? Double ?? 0.0
+                                            totalScore += avgScore
+                                        }
+                                        // Once all comps are fetched, recalculate ELO
+                                        if totalCompetitions == compsArray.count {
+                                            let newELO = totalScore / Double(totalCompetitions)
+                                            db.collection("teams").document(teamID).updateData([
+                                                "eloScore": newELO
+                                            ]) { error in
+                                                if let error = error {
+                                                    print("Error updating ELO score for \(teamID): \(error)")
+                                                } else {
+                                                    print("Updated ELO score for \(teamID) to \(newELO)")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // If this is a new competition, we just update the ELO based on newAvg (as done earlier)
+                    for (teamID, newAvg) in updatedELOScores {
+                        db.collection("teams").document(teamID).getDocument { (teamDoc, error) in
+                            if let error = error {
+                                print("Error fetching team data for ELO update: \(error)")
+                                return
+                            }
+                            
+                            if let teamDoc = teamDoc, teamDoc.exists {
+                                var currentELO = teamDoc.data()?["eloScore"] as? Double ?? 0.0
+                                let compsArray = teamDoc.data()?["comps"] as? [String] ?? []
+                                
+                                let currentCompetitionsCount = compsArray.count
+                                
+                                // Calculate the new ELO score
+                                let newELO = (currentELO * Double(currentCompetitionsCount) + newAvg) / Double(currentCompetitionsCount + 1)
+                                
+                                // Update the team's ELO score
+                                db.collection("teams").document(teamID).updateData([
+                                    "eloScore": newELO
+                                ]) { error in
+                                    if let error = error {
+                                        print("Error updating ELO score for \(teamID): \(error)")
+                                    } else {
+                                        print("Updated ELO score for \(teamID) to \(newELO)")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
