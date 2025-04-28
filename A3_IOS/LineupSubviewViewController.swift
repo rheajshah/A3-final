@@ -101,7 +101,7 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
                 let data = doc.data()
                 let teamName = data["name"] as? String ?? "Unknown"
                 let logoURL = data["teamLogoURL"] as? String ?? ""
-                let eloScore = data["eloScore"] as? Int ?? 0
+                let eloScore = data["eloScore"] as? Double ?? 0
                 return LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: eloScore)
             } ?? []
 
@@ -126,7 +126,7 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
                 let data = doc.data()
                 let teamName = data["name"] as? String ?? "Unknown"
                 let logoURL = data["teamLogoURL"] as? String ?? ""
-                let eloScore = data["eloScore"] as? Int ?? 0
+                let eloScore = data["eloScore"] as? Double ?? 0
                 let team = LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: eloScore)
                 teamsDict[doc.documentID] = team
             }
@@ -156,18 +156,9 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
 
         let team = attendingTeams[indexPath.row]
         let position = indexPath.row + 1 // 1-based ranking
-        
-        // Set the team name and ELO score
-        cell.teamName.text = team.name
-        cell.eloLabel.text = "ELO: \(team.elo)"
 
         cell.configure(with: team, position: position, isPlacingsMode: placingsExist)
        
-        // Load the team logo image
-        if let url = URL(string: team.logoURL) {
-            cell.loadImage(from: url, into: cell.teamLogoImageView)
-        }
-
         return cell
     }
     
@@ -199,9 +190,9 @@ class LineupTeam {
     var id: String
     var name: String
     var logoURL: String
-    var elo: Int
+    var elo: Double
 
-    init(id: String, name: String, logoURL: String, elo: Int) {
+    init(id: String, name: String, logoURL: String, elo: Double) {
         self.id = id
         self.name = name
         self.logoURL = logoURL

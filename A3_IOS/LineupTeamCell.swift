@@ -23,12 +23,21 @@ class LineupTeamCell: UITableViewCell {
     }
     
     func configure(with team: LineupTeam, position: Int?, isPlacingsMode: Bool) {
+        teamName.text = team.name
+        eloLabel.text = "ELO: \(team.elo)" // Always show ELO
+
         if isPlacingsMode {
-            numberLabel.isHidden = false
-            numberLabel.text = "\(position ?? 0)" // 1, 2, 3, etc.
+           numberLabel.isHidden = false
+           numberLabel.text = "\(position ?? 0)" // 1, 2, 3, etc.
         } else {
-            numberLabel.isHidden = true
+           numberLabel.isHidden = true
         }
+        
+        // Load the team logo image
+        if let url = URL(string: team.logoURL) {
+            loadImage(from: url, into: teamLogoImageView)
+        }
+
     }
 
     func loadImage(from url: URL, into imageView: UIImageView?) {

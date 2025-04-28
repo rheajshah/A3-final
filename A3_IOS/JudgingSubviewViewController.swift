@@ -134,7 +134,7 @@ class JudgingSubviewViewController: UIViewController {
                     let data = doc.data()
                     let name = data["name"] as? String ?? "Unknown"
                     let logoURL = data["teamLogoURL"] as? String ?? ""
-                    let elo = data["elo"] as? Int ?? 0
+                    let elo = data["eloScore"] as? Double ?? 0
                     return LineupTeam(id: doc.documentID, name: name, logoURL: logoURL, elo: elo)
                 }
                 
