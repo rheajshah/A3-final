@@ -9,7 +9,7 @@ import UIKit
 import FirebaseFirestore
 import FirebaseStorage
 
-class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UITableViewDelegate {
+class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UITableViewDelegate, UITableViewDataSource {
     
     @IBOutlet weak var teamPicture: UIImageView!
     @IBOutlet weak var teamName: UILabel!
@@ -19,11 +19,15 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
     @IBOutlet weak var eloRank: UILabel!
     @IBOutlet weak var eloScore: UILabel!
     @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var compPlacingsTableView: UITableView!
+    
     
     //a variable to hold the team ID passed from TeamsViewController
     var teamId: String?
     var comps: [CompCollectionViewCell] = []
     var instagramHandle: String?
+    var competitionDetails: [(name: String, placing: String, logoURL: String)] = []
+    var compsVisitedIds: [String] = []
     
     private let db = Firestore.firestore()
     
@@ -33,6 +37,9 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
         collectionView.dataSource = self
         collectionView.delegate = self
         
+        compPlacingsTableView.dataSource = self
+        compPlacingsTableView.delegate = self
+                
         // Check if the teamId is available, then fetch the team details
 //        if let teamId = teamId {
 //            fetchTeamDetails(teamId: teamId)
@@ -45,13 +52,90 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        competitionDetails.removeAll()
 
         if let teamId = teamId {
             fetchTeamDetails(teamId: teamId)
         }
     }
-
     
+    private func fetchCompetitionDetails(for compIds: [String]) {
+        let group = DispatchGroup()
+        competitionDetails.removeAll()
+        print(compIds)
+        for compId in compIds {
+            group.enter()
+            Firestore.firestore().collection("comps").document(compId)
+              .getDocument { snapshot, _ in
+                defer { group.leave() }
+                guard let d = snapshot?.data() else { return }
+
+                let name     = d["name"]    as? String ?? "Unknown Competition"
+                let placings = d["placings"] as? [String]  ?? []
+                let idx      = self.teamId.flatMap { placings.firstIndex(of: $0) }
+                let placeStr = idx.map { String($0 + 1) } ?? "–"
+                let logoURL  = d["logoURL"] as? String    ?? ""
+
+                self.competitionDetails.append(
+                  (name: name, placing: placeStr, logoURL: logoURL)
+                )
+            }
+        }
+        group.notify(queue: .main) {
+            self.compPlacingsTableView.reloadData()
+        }
+    }
+    
+    func tableView(_ tv: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return competitionDetails.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "CompTableCell", for: indexPath)
+        let detail = competitionDetails[indexPath.row]
+        
+        // Texts
+        cell.textLabel?.text       = detail.name
+        cell.detailTextLabel?.text = detail.placing
+        
+        // Reset image view to prevent any resizing when reused
+        cell.imageView?.image = UIImage(systemName: "photo") // placeholder
+        
+        if let url = URL(string: detail.logoURL) {
+            loadImage(from: url, into: cell.imageView)
+        }
+        
+        // Ensure the image view stays circular
+        if let iv = cell.imageView {
+            iv.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                iv.widthAnchor.constraint(equalToConstant: 40),
+                iv.heightAnchor.constraint(equalToConstant: 40)
+            ])
+            iv.contentMode = .scaleAspectFill
+            iv.clipsToBounds = true
+            iv.layer.cornerRadius = 20 // half of 40
+        }
+        
+        // Disable selection highlight, so it doesn't affect the size
+        cell.selectionStyle = .none
+        cell.isUserInteractionEnabled = false
+        return cell
+    }
+
+    // Optional: Handle cell selection explicitly (this will avoid resizing)
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // Deselect row without animation to avoid resizing
+        tableView.deselectRow(at: indexPath, animated: false)
+        // Optionally, handle the selection logic (e.g., push a new view controller, etc.)
+    }
+
+
+
+
+
+
+
     func fetchTeamDetails(teamId: String) {
         db.collection("teams").document(teamId).getDocument { (document, error) in
             if let error = error {
@@ -84,7 +168,7 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
                     self.location.text = location
                     self.eloRank.text = "# \(eloRank)"
                     self.eloScore.text = String(format: "%.2f", eloScore)  //format eloScore as a string with two decimal places
-                                    
+                    
                     
                     // Set the team picture (if available)
                     if let pictureURL = URL(string: teamPictureURL) {
@@ -93,6 +177,7 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
                     
                     // Fetch competitions
                     self.fetchCompetitions(for: compIds)
+                    self.fetchCompetitionDetails(for: compIds)
                 }
             }
         }
