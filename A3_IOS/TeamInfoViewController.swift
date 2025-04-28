@@ -96,7 +96,17 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
         
         // Texts
         cell.textLabel?.text       = detail.name
-        cell.detailTextLabel?.text = detail.placing
+        var suffix = ""
+        if detail.placing == "1" {
+            suffix = "st"
+        } else if detail.placing == "2" {
+            suffix = "nd"
+        } else if detail.placing == "3" {
+            suffix = "rd"
+        } else {
+            suffix = "th"
+        }
+        cell.detailTextLabel?.text = detail.placing + suffix
         
         // Reset image view to prevent any resizing when reused
         cell.imageView?.image = UIImage(systemName: "photo") // placeholder
