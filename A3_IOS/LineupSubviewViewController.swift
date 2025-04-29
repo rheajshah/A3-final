@@ -122,44 +122,18 @@ class LineupSubviewViewController: UIViewController, UITableViewDelegate, UITabl
             guard let docs = snapshot?.documents else { return }
             var teamsDict: [String: LineupTeam] = [:]
 
-            let dispatchGroup = DispatchGroup() // Used to handle async calls
-
             for doc in docs {
                 let data = doc.data()
                 let teamName = data["name"] as? String ?? "Unknown"
                 let logoURL = data["teamLogoURL"] as? String ?? ""
-                
-                // Start the async fetch for each team's average score
-                dispatchGroup.enter()
-                
-                // Fetch the average score from the competition's scores collection
-                let compRef = self.db.collection("comps").document(self.competitionID).collection("scores").document(doc.documentID)
-                compRef.getDocument { document, error in
-                    if let error = error {
-                        print("Error fetching score data for team \(doc.documentID): \(error)")
-                        dispatchGroup.leave() // Leave the group if error
-                        return
-                    }
-                    
-                    guard let scoreData = document?.data() else {
-                        dispatchGroup.leave() // Leave the group if no data
-                        return
-                    }
-
-                    // Extract the average score from the scores document
-                    let averageScore = scoreData["averageScore"] as? Double ?? 0.0
-                    
-                    // Create the LineupTeam object with the fetched average score
-                    let team = LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: averageScore)
-                    teamsDict[doc.documentID] = team
-                    
-                    dispatchGroup.leave() // Leave the group after processing the team
-                }
+                let eloScore = data["eloScore"] as? Double ?? 0
+                let team = LineupTeam(id: doc.documentID, name: teamName, logoURL: logoURL, elo: eloScore)
+                teamsDict[doc.documentID] = team
             }
 
-            // Once all async fetches are completed, update the attendingTeams
-            dispatchGroup.notify(queue: .main) {
-                self.attendingTeams = teamIDs.compactMap { teamsDict[$0] }
+            self.attendingTeams = teamIDs.compactMap { teamsDict[$0] }
+
+            DispatchQueue.main.async {
                 self.tableView.reloadData()
             }
         }

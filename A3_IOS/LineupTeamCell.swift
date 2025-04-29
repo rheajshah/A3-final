@@ -24,7 +24,7 @@ class LineupTeamCell: UITableViewCell {
     
     func configure(with team: LineupTeam, position: Int?, isPlacingsMode: Bool) {
         teamName.text = team.name
-        eloLabel.text = "ELO Comp Average: \(team.elo)" // Always show ELO
+        eloLabel.text = "Overall ELO: \(team.elo)" // Always show ELO
 
         if isPlacingsMode {
            numberLabel.isHidden = false

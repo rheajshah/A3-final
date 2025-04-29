@@ -94,28 +94,31 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
         let cell = tableView.dequeueReusableCell(withIdentifier: "CompTableCell", for: indexPath)
         let detail = competitionDetails[indexPath.row]
         
-        // Texts
-        cell.textLabel?.text       = detail.name
-        var suffix = ""
-        if detail.placing == "1" {
-            suffix = "st"
-        } else if detail.placing == "2" {
-            suffix = "nd"
-        } else if detail.placing == "3" {
-            suffix = "rd"
+        // Text
+        cell.textLabel?.text = detail.name
+
+        if let place = Int(detail.placing) {
+            var suffix = ""
+            if place == 1 {
+                suffix = "st"
+            } else if place == 2 {
+                suffix = "nd"
+            } else if place == 3 {
+                suffix = "rd"
+            } else {
+                suffix = "th"
+            }
+            cell.detailTextLabel?.text = "\(place)\(suffix)"
         } else {
-            suffix = "th"
+            cell.detailTextLabel?.text = "TBA"
         }
-        cell.detailTextLabel?.text = detail.placing + suffix
-        
-        // Reset image view to prevent any resizing when reused
+
+        // Image
         cell.imageView?.image = UIImage(systemName: "photo") // placeholder
-        
         if let url = URL(string: detail.logoURL) {
             loadImage(from: url, into: cell.imageView)
         }
         
-        // Ensure the image view stays circular
         if let iv = cell.imageView {
             iv.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
@@ -124,10 +127,9 @@ class TeamInfoViewController: UIViewController, UICollectionViewDataSource, UICo
             ])
             iv.contentMode = .scaleAspectFill
             iv.clipsToBounds = true
-            iv.layer.cornerRadius = 20 // half of 40
+            iv.layer.cornerRadius = 20
         }
-        
-        // Disable selection highlight, so it doesn't affect the size
+
         cell.selectionStyle = .none
         cell.isUserInteractionEnabled = false
         return cell

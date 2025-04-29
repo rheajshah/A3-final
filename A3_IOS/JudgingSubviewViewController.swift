@@ -28,6 +28,7 @@ class JudgingSubviewViewController: UIViewController {
         super.viewDidLoad()
         //show button only if user is admin
         editButton.isHidden = !(isAdmin ?? false)
+        inputScoresButton.isHidden = !(isAdmin ?? false)
         loadJudgingData()
         NotificationCenter.default.addObserver(self, selector: #selector(reloadJudgingData), name: Notification.Name("JudgingInfoUpdated"), object: nil)
     }
